@@ -4,6 +4,18 @@
 #include<time.h>
 #include<windows.h>
 
+#define IS_EMPTY 0
+#define NOT_EMPTY 1
+
+//해당 칸의 상태를 열거형으로 저장
+enum State
+{
+	null = 0,
+	is_moving,
+	stuck,
+	wall
+};
+
 //도형의 모양 저장 [도형 갯수] [방향 갯수] [블럭들 좌표]
 char form[7][4][8] =
 {
@@ -83,25 +95,26 @@ void InitBoard()
 	for (int i = 0; i < 21; i++)
 	{
 		CurrentXY(30, i);
-		printf("%s", SpriteArray[3]);
+		printf("%s", SpriteArray[State::wall]);
 		CurrentXY(52, i);
-		printf("%s", SpriteArray[3]);
+		printf("%s", SpriteArray[State::wall]);
 	}
 	for (int i = 0; i < 12; i++)
 	{
 		CurrentXY(30+i*2, 20);
-		printf("%s", SpriteArray[3]);
+		printf("%s", SpriteArray[State::wall]);
 	}
 }
 
+#pragma region 출력/제거
 void Print_form()
 {
 	for (int i = 0; i < 4; i++)
 	{
 		CurrentXY(30 + (screen_x + form[form_kind][rotate_kind][i * 2]) * 2, screen_y + form[form_kind][rotate_kind][i * 2 + 1]);
-		printf("%s", SpriteArray[1]);
+		printf("%s", SpriteArray[State::is_moving]);
 
-		tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = 1;
+		tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = State::is_moving;
 	}
 }
 
@@ -110,7 +123,7 @@ void Print_next()
 	for (int i = 0; i < 4; i++)
 	{
 		CurrentXY(56 + (form[form_kind_next][0][i * 2]) * 2, 5 + (form[form_kind_next][0][i * 2 + 1]));
-		printf("%s", SpriteArray[1]);
+		printf("%s", SpriteArray[State::is_moving]);
 	}
 }
 
@@ -119,9 +132,9 @@ void Delete_form()
 	for (int i = 0; i < 4; i++)
 	{
 		CurrentXY(30 + (screen_x + form[form_kind][rotate_kind][i * 2]) * 2, screen_y + form[form_kind][rotate_kind][i * 2 + 1]);
-		printf("%s", SpriteArray[0]);
+		printf("%s", SpriteArray[State::null]);
 
-		tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = 0;
+		tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = State::null;
 	}
 }
 
@@ -130,10 +143,12 @@ void Delete_next()
 	for (int i = 0; i < 4; i++)
 	{
 		CurrentXY(56 + (form[form_kind_next][0][i * 2]) * 2, 5 + (form[form_kind_next][0][i * 2 + 1]));
-		printf("%s", SpriteArray[0]);
+		printf("%s", SpriteArray[State::null]);
 	}
 }
+#pragma endregion
 
+//(구) 키 입력
 int GetKey()
 {
 	if (GetKeyState(VK_UP) & 0x8000)
@@ -157,6 +172,7 @@ int GetKey()
 	}
 }
 
+//해당 좌표가 빈 칸인지 체크
 int Check_board(int x, int y)
 {
 	int temp = 0;
@@ -164,41 +180,101 @@ int Check_board(int x, int y)
 	for (int i = 0; i < 4; i++)
 	{
 		temp = tetris[y + form[form_kind][rotate_kind][i*2+1]][x + form[form_kind][rotate_kind][i*2]];
-		if (temp > 1) return 1;
+		if (temp > 1) return NOT_EMPTY;
 	}
 
-	return 0;
+	return IS_EMPTY;
 }
 
+//키 입력
 int Select()
 {
+	int chk1, chk2;
+	int prev_rotate, new_rotate;
+	int ret;
+
 	if (GetAsyncKeyState(VK_LEFT))
 	{
-
+		chk1 = Check_board(screen_x - 1, screen_y);
+		if (chk1 == IS_EMPTY)
+		{
+			Delete_form();
+			screen_x--;
+			Print_form();
+			return true;
+		}
 	}
 	if (GetAsyncKeyState(VK_RIGHT))
 	{
-
+		chk1 = Check_board(screen_x + 1, screen_y);
+		if (chk1 == IS_EMPTY)
+		{
+			Delete_form();
+			screen_x++;
+			Print_form();
+			return true;
+		}
 	}
 	if (GetAsyncKeyState(VK_DOWN))
 	{
-
+		if (Check_board(screen_x, screen_y + 1) == IS_EMPTY)
+		{
+			Delete_form();
+			screen_y++;
+			Print_form();
+		}
 	}
 	if (GetAsyncKeyState(VK_UP))
 	{
+		prev_rotate = rotate_kind;
+		if (rotate_kind == 3) rotate_kind = 0;
+		else rotate_kind++;
+		new_rotate = rotate_kind;
 
+		chk1 = Check_board(screen_x, screen_y);
+
+		if (chk1 == IS_EMPTY)
+		{
+			rotate_kind = prev_rotate;
+			Delete_form();
+			rotate_kind = new_rotate;
+			Print_form();
+		}
+		else
+		{
+			rotate_kind = prev_rotate;
+		}
 	}
 	if (GetAsyncKeyState(VK_SPACE))
 	{
 
 	}
 
-	return 1;
+	return true;
+}
+
+//시간 지연
+void Timing(DWORD i = 200)
+{
+	DWORD thisTickCount;
+	static DWORD lastTickCount = 0;
+	DWORD delay = i;
+	thisTickCount = GetTickCount();
+	while (1)
+	{
+		if ((thisTickCount - lastTickCount) > delay)
+		{
+			lastTickCount = thisTickCount;
+			return;
+		}
+		thisTickCount = GetTickCount();
+	}
 }
 
 void main()
 {
-	int chk, chk2;
+	int chk1, chk2;
+	bool IS_MOVING = true;
 	CursorOff();
 
 	InitBoard();
@@ -208,11 +284,8 @@ void main()
 
 	while (true)
 	{
-		Delete_form();
+		//Delete_form();
 		Delete_next();
-
-		if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
-			return;
 
 		screen_x = 4;
 		screen_y = 0;
@@ -223,20 +296,38 @@ void main()
 		Print_form();
 		Print_next();
 
-		chk = Check_board(screen_x, screen_y);
+		chk1 = Check_board(screen_x, screen_y);
 		chk2 = Check_board(screen_x, screen_y + 1);
 
 		//하강 불능
-		if (chk == 0 && chk2 == 1)
+		if (chk1 == IS_EMPTY && chk2 == NOT_EMPTY)
 		{
-
+			
 		}
-		else if (chk == 1 && chk2 == 1) break;
+		else if (chk1 == NOT_EMPTY && chk2 == NOT_EMPTY) break;
+		else IS_MOVING = true;
 
 		do
 		{
+			if (GetAsyncKeyState(VK_ESCAPE))
+				return;
+			if (Check_board(screen_x, screen_y + 1) == IS_EMPTY)
+			{
+				Delete_form();
+				screen_y++;
+				Print_form();
+			}
+			else IS_MOVING = false;
+			Timing();
+		} while (Select() && IS_MOVING);
 
-		} while (Select());
+		for (int i = 0; i < 4; i++)
+		{
+			CurrentXY(30 + (screen_x + form[form_kind][rotate_kind][i * 2]) * 2, screen_y + form[form_kind][rotate_kind][i * 2 + 1]);
+			printf("%s", SpriteArray[State::stuck]);
+
+			tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = State::stuck;
+		}
 	}
 
 #if _DEBUG //디버그 모드라면 창을 바로 닫지 않는다
