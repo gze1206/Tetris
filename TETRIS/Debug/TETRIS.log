@@ -1,0 +1,5 @@
+﻿  tetris01.cpp
+c:\users\ggzzz\documents\visual studio 2015\projects\tetris\tetris\tetris01.cpp(174): warning C4101: 'chk2' :참조되지 않은 지역 변수입니다.
+c:\users\ggzzz\documents\visual studio 2015\projects\tetris\tetris\tetris01.cpp(158): warning C4715: 'GetKey': 모든 제어 경로에서 값을 반환하지는 않습니다.
+  TETRIS.vcxproj -> C:\Users\ggzzz\documents\visual studio 2015\Projects\TETRIS\Debug\TETRIS.exe
+  TETRIS.vcxproj -> C:\Users\ggzzz\documents\visual studio 2015\Projects\TETRIS\Debug\TETRIS.pdb (Full PDB)
