@@ -35,7 +35,7 @@ char SpriteArray[4][3] = { "　", "□", "■", "◇" };
 int tetris[21][12];
 
 //점수 저장
-int num = 0;
+int Score = 0;
 
 //블록의 종류를 나타내는 변수
 int form_kind;
@@ -47,6 +47,9 @@ int rotate_kind;
 
 //화면 상에서의 좌표
 int screen_x = 0, screen_y = 0;
+
+//살아있는지 체크
+bool IS_ALIVE = true;
 
 //커서 숨기기
 void CursorOff()
@@ -107,6 +110,7 @@ void InitBoard()
 }
 
 #pragma region 출력/제거
+//도형 그리기
 void Print_form()
 {
 	for (int i = 0; i < 4; i++)
@@ -118,6 +122,7 @@ void Print_form()
 	}
 }
 
+//다음 도형 그리기
 void Print_next()
 {
 	for (int i = 0; i < 4; i++)
@@ -127,6 +132,17 @@ void Print_next()
 	}
 }
 
+//해당 라인을 다시 그린다
+void DrawLine(int row)
+{
+	for (int i = 1; i < 11; i++)
+	{
+		CurrentXY(30 + (screen_x + i * 2, screen_y + row);
+		printf("%s", SpriteArray[tetris[row][i]]);
+	}
+}
+
+//도형 지우기
 void Delete_form()
 {
 	for (int i = 0; i < 4; i++)
@@ -138,6 +154,7 @@ void Delete_form()
 	}
 }
 
+//다음 도형 지우기
 void Delete_next()
 {
 	for (int i = 0; i < 4; i++)
@@ -186,6 +203,26 @@ int Check_board(int x, int y)
 	return IS_EMPTY;
 }
 
+//도형 한 줄 아래로 내리기
+bool Go_Down()
+{
+	int chk1;
+
+	chk1 = Check_board(screen_x, screen_y + 1);
+
+	if (chk1 == NOT_EMPTY)
+	{
+		return false;
+	}
+	else
+	{
+		Delete_form();
+		screen_y++;
+		Print_form();
+		return true;
+	}
+}
+
 //키 입력
 int Select()
 {
@@ -193,7 +230,7 @@ int Select()
 	int prev_rotate, new_rotate;
 	int ret;
 
-	if (GetAsyncKeyState(VK_LEFT))
+	if (GetAsyncKeyState(VK_LEFT) || GetAsyncKeyState('A') || GetAsyncKeyState('a'))
 	{
 		chk1 = Check_board(screen_x - 1, screen_y);
 		if (chk1 == IS_EMPTY)
@@ -204,7 +241,7 @@ int Select()
 			return true;
 		}
 	}
-	if (GetAsyncKeyState(VK_RIGHT))
+	if (GetAsyncKeyState(VK_RIGHT) || GetAsyncKeyState('D') || GetAsyncKeyState('d'))
 	{
 		chk1 = Check_board(screen_x + 1, screen_y);
 		if (chk1 == IS_EMPTY)
@@ -215,16 +252,32 @@ int Select()
 			return true;
 		}
 	}
-	if (GetAsyncKeyState(VK_DOWN))
+	if (GetAsyncKeyState(VK_DOWN) || GetAsyncKeyState('S') || GetAsyncKeyState('s'))
 	{
-		if (Check_board(screen_x, screen_y + 1) == IS_EMPTY)
+		Go_Down();
+	}
+	if (GetAsyncKeyState('z') || GetAsyncKeyState('Z'))
+	{
+		prev_rotate = rotate_kind;
+		if (rotate_kind == 0) rotate_kind = 3;
+		else rotate_kind--;
+		new_rotate = rotate_kind;
+
+		chk1 = Check_board(screen_x, screen_y);
+
+		if (chk1 == IS_EMPTY)
 		{
+			rotate_kind = prev_rotate;
 			Delete_form();
-			screen_y++;
+			rotate_kind = new_rotate;
 			Print_form();
 		}
+		else
+		{
+			rotate_kind = prev_rotate;
+		}
 	}
-	if (GetAsyncKeyState(VK_UP))
+	if (GetAsyncKeyState('x') || GetAsyncKeyState('X'))
 	{
 		prev_rotate = rotate_kind;
 		if (rotate_kind == 3) rotate_kind = 0;
@@ -247,7 +300,8 @@ int Select()
 	}
 	if (GetAsyncKeyState(VK_SPACE))
 	{
-
+		while (Go_Down());
+		return true;
 	}
 
 	return true;
@@ -271,6 +325,61 @@ void Timing(DWORD i = 200)
 	}
 }
 
+//게임 오버인지 체크한다
+void CheckGameOver()
+{
+	for (int j = 0; j < 5; j++)
+	{
+		for (int i = 0; i < 12; i++)
+		{
+			if (tetris[j][i] == State::stuck)
+			{
+				IS_ALIVE = false;
+				return;
+			}
+		}
+	}
+}
+
+//데이터 옮기기
+void MoveData(int row)
+{
+	for (int i = row - 1; i >= 0; i--)
+		for (int j = 1; j < 11; j++)
+		{
+			tetris[i + 1][j] = tetris[i][j];
+			DrawLine(row);
+		}
+}
+
+//줄에 빈 칸이 있는지 체크한다
+int CheckLine(int row)
+{
+	for (int i = 1; i < 11; i++)
+	{
+		if (tetris[row][i] == 0) return IS_EMPTY;
+	}
+	return NOT_EMPTY;
+}
+
+//지울 줄이 있는지 체크한다
+void CheckClearLine()
+{
+	int ret;
+	int bonus_score = 0, temp = 1;
+
+	for (int i = screen_y; i < screen_y + 4; i++)
+	{
+		if (CheckLine(i) == NOT_EMPTY)
+		{
+			bonus_score += temp;
+			temp += temp;
+			Score += 1 + bonus_score;
+			MoveData(i);
+		}
+	}
+}
+
 void main()
 {
 	int chk1, chk2;
@@ -282,9 +391,8 @@ void main()
 	srand((unsigned)time(NULL));
 	form_kind_next = rand() % 7;
 
-	while (true)
+	while (IS_ALIVE)
 	{
-		//Delete_form();
 		Delete_next();
 
 		screen_x = 4;
@@ -311,24 +419,32 @@ void main()
 		{
 			if (GetAsyncKeyState(VK_ESCAPE))
 				return;
-			if (Check_board(screen_x, screen_y + 1) == IS_EMPTY)
-			{
-				Delete_form();
-				screen_y++;
-				Print_form();
-			}
-			else IS_MOVING = false;
+			IS_MOVING = Go_Down();
 			Timing();
 		} while (Select() && IS_MOVING);
 
+		for (int i = 0; i < 3 || !Select(); i++)
+		{
+			if (GetAsyncKeyState(VK_ESCAPE))
+				return;
+			Go_Down();
+			Timing();
+		}
+
 		for (int i = 0; i < 4; i++)
 		{
+			Go_Down();
 			CurrentXY(30 + (screen_x + form[form_kind][rotate_kind][i * 2]) * 2, screen_y + form[form_kind][rotate_kind][i * 2 + 1]);
 			printf("%s", SpriteArray[State::stuck]);
 
 			tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = State::stuck;
+			CheckGameOver();
 		}
 	}
+
+	InitBoard();
+	CurrentXY(37, 9);
+	printf("GAME OVER!");
 
 #if _DEBUG //디버그 모드라면 창을 바로 닫지 않는다
 	system("pause>nul");

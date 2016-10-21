@@ -1,6 +1,6 @@
 ﻿  tetris01.cpp
-d:\github\tetris\tetris\tetris01.cpp(194): warning C4101: 'ret' :참조되지 않은 지역 변수입니다.
-d:\github\tetris\tetris\tetris01.cpp(192): warning C4101: 'chk2' :참조되지 않은 지역 변수입니다.
-d:\github\tetris\tetris\tetris01.cpp(173): warning C4715: 'GetKey': 모든 제어 경로에서 값을 반환하지는 않습니다.
+d:\github\tetris\tetris\tetris01.cpp(217): warning C4101: 'ret' :참조되지 않은 지역 변수입니다.
+d:\github\tetris\tetris\tetris01.cpp(215): warning C4101: 'chk2' :참조되지 않은 지역 변수입니다.
+d:\github\tetris\tetris\tetris01.cpp(176): warning C4715: 'GetKey': 모든 제어 경로에서 값을 반환하지는 않습니다.
   TETRIS.vcxproj -> D:\GitHub\Tetris\Debug\TETRIS.exe
   TETRIS.vcxproj -> D:\GitHub\Tetris\Debug\TETRIS.pdb (Full PDB)
