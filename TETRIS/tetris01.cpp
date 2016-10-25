@@ -107,6 +107,8 @@ void InitBoard()
 		CurrentXY(30+i*2, 20);
 		printf("%s", SpriteArray[State::wall]);
 	}
+	CurrentXY(15, 9);
+	printf("◎SCORE◎");
 }
 
 #pragma region 출력/제거
@@ -132,16 +134,6 @@ void Print_next()
 	}
 }
 
-//해당 라인을 다시 그린다
-void DrawLine(int row)
-{
-	for (int i = 1; i < 11; i++)
-	{
-		CurrentXY(30 + (screen_x + i * 2, screen_y + row);
-		printf("%s", SpriteArray[tetris[row][i]]);
-	}
-}
-
 //도형 지우기
 void Delete_form()
 {
@@ -162,6 +154,31 @@ void Delete_next()
 		CurrentXY(56 + (form[form_kind_next][0][i * 2]) * 2, 5 + (form[form_kind_next][0][i * 2 + 1]));
 		printf("%s", SpriteArray[State::null]);
 	}
+}
+
+void PrintAll()
+{
+	for (int i = 0; i < 20; i++)
+	{
+		for (int j = 1; j < 11; j++)
+		{
+			CurrentXY(30 + j * 2, i);
+			if (tetris[i][j] == State::stuck)
+			{
+				printf("%s", SpriteArray[State::stuck]);
+			}
+			else
+			{
+				printf("%s", SpriteArray[State::null]);
+			}
+		}
+	}
+}
+
+void PrintScore()
+{
+	CurrentXY(15, 10);
+	printf("%d", Score);
 }
 #pragma endregion
 
@@ -348,7 +365,6 @@ void MoveData(int row)
 		for (int j = 1; j < 11; j++)
 		{
 			tetris[i + 1][j] = tetris[i][j];
-			DrawLine(row);
 		}
 }
 
@@ -368,14 +384,17 @@ void CheckClearLine()
 	int ret;
 	int bonus_score = 0, temp = 1;
 
-	for (int i = screen_y; i < screen_y + 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
-		if (CheckLine(i) == NOT_EMPTY)
+		ret = screen_y + form[form_kind][rotate_kind][i * 2 + 1];
+		if (CheckLine(ret) == NOT_EMPTY)
 		{
 			bonus_score += temp;
 			temp += temp;
 			Score += 1 + bonus_score;
-			MoveData(i);
+			MoveData(ret);
+			PrintScore();
+			PrintAll();
 		}
 	}
 }
@@ -403,17 +422,13 @@ void main()
 
 		Print_form();
 		Print_next();
+		PrintScore();
 
 		chk1 = Check_board(screen_x, screen_y);
 		chk2 = Check_board(screen_x, screen_y + 1);
 
-		//하강 불능
-		if (chk1 == IS_EMPTY && chk2 == NOT_EMPTY)
-		{
-			
-		}
-		else if (chk1 == NOT_EMPTY && chk2 == NOT_EMPTY) break;
-		else IS_MOVING = true;
+		if (chk1 == NOT_EMPTY && chk2 == NOT_EMPTY) break;
+		else if (chk1 == NOT_EMPTY && chk2 == IS_EMPTY) IS_MOVING = true;
 
 		do
 		{
@@ -439,12 +454,14 @@ void main()
 
 			tetris[screen_y + form[form_kind][rotate_kind][i * 2 + 1]][screen_x + form[form_kind][rotate_kind][i * 2]] = State::stuck;
 			CheckGameOver();
+			CheckClearLine();
 		}
 	}
 
 	InitBoard();
 	CurrentXY(37, 9);
 	printf("GAME OVER!");
+	CursorOn();
 
 #if _DEBUG //디버그 모드라면 창을 바로 닫지 않는다
 	system("pause>nul");
